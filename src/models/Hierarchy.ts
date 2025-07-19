@@ -25,11 +25,15 @@ export class Hierarchy {
 
     const files: File[] = [];
     this.categories.forEach(category => category.algorithms.forEach(algorithm => files.push(...algorithm.files)));
-    this.cacheCommitAuthors().then(commitAuthors => this.cacheContributors(files, commitAuthors));
+    this.cacheCommitAuthors().then(commitAuthors => this.cacheContributors(files, commitAuthors)).catch((ex)=>{console.log(`cacheCommitAuthors error ${ex}`)});
   }
 
   async update(commit?: string) {
-    await pull(this.path, 'algorithms', commit);
+    try{
+      await pull(this.path, 'algorithms', commit);
+    }catch(ex){
+      console.log("Failed to update Hierarchy with error" + ex)
+    }
     this.refresh();
   };
 

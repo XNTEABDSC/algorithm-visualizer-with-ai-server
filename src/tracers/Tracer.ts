@@ -18,7 +18,12 @@ export abstract class Tracer {
     if (release) {
       return this.build(release);
     }
-    const {data} = await GitHubApi.getLatestRelease('algorithm-visualizer', `tracers.${this.lang}`);
-    return this.build(data);
+    try{
+      const {data} = await GitHubApi.getLatestRelease('algorithm-visualizer', `tracers.${this.lang}`);
+      return this.build(data);
+    }catch(ex){
+      console.log(`Failed to update ${this.lang} with error ${ex}`)
+    }
+      
   }
 }

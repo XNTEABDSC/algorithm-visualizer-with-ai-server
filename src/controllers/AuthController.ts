@@ -18,16 +18,25 @@ export class AuthController extends Controller {
   };
 
   request = (req: express.Request, res: express.Response) => {
-    res.redirect(`https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user,gist`);
+    try{
+      res.redirect(`https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user,gist`);
+    }catch(ex){
+      console.log(`AuthController request error ${ex}`)
+    }
+    
   };
 
   response = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const {code} = req.query;
-
-    GitHubApi.getAccessToken(code).then(({data}) => {
-      const {access_token} = data;
-      res.send(`<script>window.opener.signIn('${access_token}');window.close();</script>`);
-    }).catch(next);
+    try{
+      GitHubApi.getAccessToken(code).then(({data}) => {
+        const {access_token} = data;
+        res.send(`<script>window.opener.signIn('${access_token}');window.close();</script>`);
+      }).catch(next);
+    }catch(ex){
+      console.log(`AuthController response error ${ex}`)
+    }
+    
   };
 
   destroy = (req: express.Request, res: express.Response) => {

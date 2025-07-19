@@ -17,7 +17,7 @@ import { frontendBuildDir, frontendBuiltDir, frontendDir, rootDir } from 'config
 const Webhook = require('express-github-webhook');
 
 export default class Server {
-  readonly hierarchy = new Hierarchy();
+  readonly hierarchy= new Hierarchy();
   readonly tracers = Object.values(Tracers).map(Tracer => new Tracer());
   private readonly app = express();
   private readonly webhook = webhookOptions && Webhook(webhookOptions);

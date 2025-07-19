@@ -3,166 +3,123 @@ import { Controller } from 'controllers/Controller';
 import { NotFound } from 'ts-httpexceptions';
 import Server from 'Server';
 
-const SyncAction_FileCreate=(fileName:string)=>({
-                    type:"FileCreate",
-                    fileName
-                })
+//import {pyrunner} from "node-pyrunner";
 
-const SyncAction_FileAppend=(fileName:string,appends:string)=>
-    ({
-        type:"FileAppend",
-        fileName,
-        appends
-    })
+import {PythonShell} from "python-shell";
 
-const SyncAction_ChatGenEnd=(chatId:number)=>({
-    type:"ChatGenEnd",
-    chatId
-})
+//let aps=new PythonShell("wda")
 
-class SyncStreamPipe{
-    public unsynced:string=""
-    public value:string=""
-    ended=false
-    constructor(){}
-    input=(v:string)=>{
-        this.unsynced=this.unsynced+v
-    }
-    input_end=()=>{this.ended=true}
-    sync=()=>{
-        const unsynced=this.unsynced
-        this.unsynced=''
-        this.value=this.value+unsynced
-        return unsynced
-    }
-    //items
-}
 
-class SyncFile{
-    public readonly fileName:string
-    public content:SyncStreamPipe
-    public syncCreated:boolean
-    /**
-     *
-     */
-    constructor(fileName:string,) {
-        this.fileName=fileName
-        this.content=new SyncStreamPipe()
-        this.syncCreated=false
-    }
-
-    sync=(syncActions:Array<object>)=>{
-        if (!this.syncCreated){
-            syncActions.push(SyncAction_FileCreate(this.fileName))
-            this.syncCreated=true
-        }
-        let content_sync=this.content.sync()
-        if (content_sync.length>0){
-            syncActions.push(SyncAction_FileAppend(this.fileName,content_sync))
-        }
-    }
-}
-
-class AIChat{
-    public readonly id:number;
-    public history:any;
-    constructor(id:number,inputs:string){
-        this.id=id
-        this.history={[0]:inputs}
-        this.context={
-            chat_output:null,
-            scripts:[],
-            genEnded:false,
-            genEndedSynced:false
-        }
-    }
-    context:{
-        chat_output:SyncFile|null,
-        scripts: Array<SyncFile>,
-        genEnded:boolean
-        genEndedSynced:boolean
-    }
-
-    public start=()=>{
-        let self=this
-        return async function() {
-            self.context.chat_output=new SyncFile("chat.md")
-            setTimeout(()=>{
-                if (self.context.chat_output)
-                self.context.chat_output.content.input("ok i read")
-            },100)
-            setTimeout(()=>{
-                if (self.context.chat_output)
-                self.context.chat_output.content.input("and i spam code")
-            },200)
-            setTimeout(()=>{
-                self.context.scripts.push(
-                    new SyncFile("a_script.md")
-                )
-            },300)
-            setTimeout(()=>{
-                self.context.scripts[0].content.input("ye")
-            },400)
-            setTimeout(()=>{
-                self.context.scripts[0].content.input("he")
-            },500)
-            setTimeout(()=>{
-                if (self.context.chat_output)
-                self.context.chat_output.content.input("done")
-                self.context.genEnded=true
-            },600)
-        }
-    }
-
-    public sync=(syncActions:Array<any>)=>{
-        if (this.context.chat_output)
-            this.context.chat_output.sync(syncActions)
-        for(let script of this.context.scripts){
-            script.sync(syncActions)
-        }
-        if (!this.context.genEndedSynced&&this.context.genEnded){
-            this.context.genEndedSynced=true
-            syncActions.push(SyncAction_ChatGenEnd(this.id))
-        }
-        return syncActions
-    }
-}
+const Path=".\\src\\controllers\\"
 
 export class AIController extends Controller {
 
-    protected chats:Array<AIChat>=[];
+    protected chats:Array<PythonShell>=[];
 
     constructor(server: Server) {
         super(server);
         this.router
             .post('/chatnew', this.chatNew)
             .post('/chatsync', this.chatSync)
+            .post('/test', this.test)
         
     }
     route = (router: express.Router): void => {
         router.use('/ai', this.router);
     };
 
-    chatNew=(req: express.Request, res: express.Response) => {
-        console.log(req.body)
+    test=(req: express.Request, res: express.Response)=>{
+        console.log("test start")
 
+        PythonShell.runString("x=1+1;print('x: ' + str(x))",{pythonPath:"D:\\ProgramFiles\\pyenv\\pyenv-win\\shims\\python.bat"}).then((res)=>{
+            console.log(`test result ${res}`)
+        }).catch(err=>{
+            console.log(`test err ${err}`)
+        })
+        console.log("test end")
+
+        
+        console.log("test start")
+
+        const testchat=new PythonShell(Path+"test.py",{pythonPath:"D:\\ProgramFiles\\pyenv\\pyenv-win\\shims\\python.bat",pythonOptions: ['-u']})
+
+        testchat.on("message",(msg)=>{
+            console.log(`message ${msg}`)
+        })
+        testchat.on("close",(msg:any)=>{
+            console.log(`close ${msg}`)
+        })
+        testchat.on("error",(msg:any)=>{
+            console.log(`error ${msg}`)
+        })
+        testchat.on("stderr",(msg)=>{
+            console.log(`stderr ${msg}`)
+        })
+        testchat.on("pythonError",(msg)=>{
+            console.log(`pythonError ${msg}`)
+        })
+        testchat.send("dwawdawd")
+
+
+        console.log("test end")
+
+        res.end()
+    }
+
+    chatNew=(req: express.Request, res: express.Response) => {
+        
+
+        
+        
         const id=this.chats.length
-        const aichat=new AIChat(id,req.body)
+        
+        //const aichat=new AIChat(id,req.body)
+        
+        console.log(`create chat id: ${id}`)
+        console.log(req.body)
+        const aichat=new PythonShell("ai_chat_cmd.py",{pythonPath:"D:\\ProgramFiles\\pyenv\\pyenv-win\\shims\\python.bat",scriptPath:Path})
+
+        aichat.on("message",(msg)=>{
+            console.log(`message ${msg}`)
+        })
+        aichat.on("close",(msg:any)=>{
+            console.log(`close ${msg}`)
+        })
+        aichat.on("error",(msg:any)=>{
+            console.log(`error ${msg}`)
+        })
+        aichat.on("stderr",(msg)=>{
+            console.log(`stderr ${msg}`)
+        })
+        aichat.on("pythonError",(msg)=>{
+            console.log(`pythonError ${msg}`)
+        })
+
+        aichat.send(JSON.stringify(id,req.body))
+        
         this.chats[id]=aichat
         res.json({chatId:id})//.send(id)
         res.end()
-        aichat.start()()
 
         //setTimeout(()=>{res.write("I read 4");res.end()},1000)
     }
     chatSync=(req: express.Request, res: express.Response) => {
-        console.log(req.body)
 
         const {chatId}=req.body
-        let result_actions:Array<any>=[]
+        
         let chat=this.chats[chatId]
-        chat.sync(result_actions)
-        res.json(result_actions)
-        res.end()
+
+        //chat.sync(result_actions)
+        chat.once("message",(msg)=>{
+            console.log("sync result")
+            console.log(msg)
+            const res_=JSON.parse(msg)
+            res.json(res_)
+            res.end()
+        })
+        chat.send("sync")
+        console.log("try sync")
+
+
     }
 }

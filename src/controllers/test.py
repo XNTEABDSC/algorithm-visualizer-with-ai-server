@@ -1,0 +1,7 @@
+print("AAAAA")
+print("BBBBB")
+print("CCCCC")
+print("DDDDD")
+dwawd=input("EEEEE")
+print("FFFFF")
+print(dwawd)

@@ -5,7 +5,7 @@
   "description": "Algorithm Visualizer is an interactive online platform that visualizes algorithms from code.",
   "scripts": {
     "watch": "set NODE_ENV=development&& set NODE_PATH=src&& ts-node-dev --respawn --ignore-watch node_modules --no-notify src",
-    "start": "set NODE_ENV=production&& set NODE_PATH=src&& ts-node --transpile-only src", 
+    "start": "set NODE_ENV=production&& set NODE_PATH=src&& ts-node --transpile-only src",
     "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "repository": {
@@ -23,6 +23,8 @@
     "@types/node-cron": "^3.0.1",
     "@types/remove-markdown": "^0.1.1",
     "@types/uuid": "^3.4.4",
+    "node-pyrunner": "^1.0.6",
+    "python-shell": "^5.0.0",
     "ts-node-dev": "^1.0.0-pre.39",
     "tslint": "^5.16.0"
   },
