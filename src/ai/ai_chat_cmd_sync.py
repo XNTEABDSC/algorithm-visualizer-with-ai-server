@@ -3,7 +3,6 @@ import ai_chat
 from ai_assistant import start
 from threading import Thread
 import logging
-from time import sleep
 
 
 logger=logging.getLogger(__name__)
@@ -18,8 +17,7 @@ t=Thread(target=start,args=[a_chat])
 t.start()
 
 while True:
-    sleep(500)
-    # wait=input()
+    wait=input()
     # print("sync")
     sync_actions=[]
     a_chat.sync(sync_actions)

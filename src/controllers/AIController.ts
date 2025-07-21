@@ -56,7 +56,7 @@ class AIChat{
         let log=new SyncStreamStr()
         this.log=log
 
-        let aichat=new PythonShell("ai_chat_cmd.py",{pythonPath:pythonPath,scriptPath:Path})
+        let aichat=new PythonShell("ai_chat_cmd_sync.py",{pythonPath:pythonPath,scriptPath:Path})
         this.aichat=aichat
         this._timeout_time=1000
         this.sync_action_cache=[]
