@@ -62,7 +62,7 @@ class AIChat{
         this.sync_action_cache=[]
 
         aichat.on("message",(msg)=>{
-            console.log(`message ${msg}`)
+            //console.log(`message ${msg}`)
         })
         aichat.on("close",(msg:any)=>{
             console.log(`close ${msg}`)
@@ -81,7 +81,7 @@ class AIChat{
             log.write(`pythonError ${msg}`)
         })
 
-        aichat.send(JSON.stringify(inputs))
+        aichat.send(inputs)
     }
     sync_action_cache:Array<Object>
 
@@ -113,6 +113,14 @@ class AIChat{
 
         let aichat=this.aichat
         aichat.once("message",(msg)=>{
+            let py_response_time=new Date()
+            let time_delta = (py_response_time.getTime()-timer.getTime())
+            console.log(`response time delta: ${time_delta}`)
+
+            if (this._timeout_time<time_delta){
+                this._timeout_time=time_delta*2
+            }
+
             console.log("sync result")
             console.log(msg)
             const res_:Array<Object>=JSON.parse(msg)
@@ -154,7 +162,7 @@ export class AIController extends Controller {
         
         console.log(`create chat id: ${id}`)
         console.log(req.body)
-        let aichat=new AIChat(req.body)
+        let aichat=new AIChat(JSON.stringify(req.body))
         
         this.chats[id]=aichat
         res.json({chatId:id})//.send(id)
