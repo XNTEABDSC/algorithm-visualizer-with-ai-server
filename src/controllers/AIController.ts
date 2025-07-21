@@ -6,65 +6,142 @@ import Server from 'Server';
 //import {pyrunner} from "node-pyrunner";
 
 import {PythonShell} from "python-shell";
+import { pythonPath } from 'config/environments';
+import { bool } from 'aws-sdk/clients/signer';
 
 //let aps=new PythonShell("wda")
 
+class SyncStreamStr{
+    public unsynced:string=""
+    public value:string=""
+    constructor(){}
+    write=(v:string)=>{
+        this.unsynced=this.unsynced+v
+    }
+    sync=()=>{
+        const unsynced=this.unsynced
+        this.unsynced=''
+        this.value=this.value+unsynced
+        return unsynced
+    }
+    //items
+}
 
-const Path=".\\src\\controllers\\"
+const SyncAction_ChatGenEnd=()=>({
+    type:"ChatGenEnd",
+})
+const SyncAction_Error=(msg:string)=>({
+    type:"Error",
+    content:msg
+})
+
+const SyncAction_Log=(msg:string)=>({
+    type:"Log",
+    content:msg
+})
+const Path=".\\src\\ai\\"
+
+class AIChat{
+    aichat:PythonShell
+    log:SyncStreamStr
+    ended:bool
+    inputs:string
+    _ended_synced:bool
+    _timeout_time:number
+    constructor(inputs:string){
+        this.inputs=inputs
+        this.ended=false
+        this._ended_synced=false
+
+        let log=new SyncStreamStr()
+        this.log=log
+
+        let aichat=new PythonShell("ai_chat_cmd.py",{pythonPath:pythonPath,scriptPath:Path})
+        this.aichat=aichat
+        this._timeout_time=1000
+        this.sync_action_cache=[]
+
+        aichat.on("message",(msg)=>{
+            console.log(`message ${msg}`)
+        })
+        aichat.on("close",(msg:any)=>{
+            console.log(`close ${msg}`)
+            this.ended=true
+        })
+        aichat.on("error",(msg:any)=>{
+            console.log(`error ${msg}`)
+            log.write(`error ${msg}`)
+        })
+        aichat.on("stderr",(msg)=>{
+            console.log(`stderr ${msg}`)
+            log.write(`stderr ${msg}`)
+        })
+        aichat.on("pythonError",(msg)=>{
+            console.log(`pythonError ${msg}`)
+            log.write(`pythonError ${msg}`)
+        })
+
+        aichat.send(JSON.stringify(inputs))
+    }
+    sync_action_cache:Array<Object>
+
+    sync(res: express.Response){
+        let timer=new Date()
+        let sync_finished=false
+        let self=this
+        function do_sync(){
+            if (!sync_finished){
+                sync_finished=true
+                res.json(self.sync_action_cache)
+                self.sync_action_cache=[]
+                res.end()
+                aichat.send("do_sync")
+            }
+        }
+
+        const syncmsg=this.log.sync()
+        if (syncmsg.length>0){
+            this.sync_action_cache.push(SyncAction_Log(syncmsg))
+        }
+        if (this.ended){
+            this.sync_action_cache.push(SyncAction_ChatGenEnd())
+        }
+
+        setTimeout(()=>{
+            do_sync()
+        },this._timeout_time)
+
+        let aichat=this.aichat
+        aichat.once("message",(msg)=>{
+            console.log("sync result")
+            console.log(msg)
+            const res_:Array<Object>=JSON.parse(msg)
+            for(let i of res_){
+                this.sync_action_cache.push(i)
+            }
+            do_sync()
+        })
+
+        aichat.send("sync")
+    }
+}
 
 export class AIController extends Controller {
 
-    protected chats:Array<PythonShell>=[];
+    protected chats:Array<AIChat>=[];
 
     constructor(server: Server) {
         super(server);
         this.router
             .post('/chatnew', this.chatNew)
             .post('/chatsync', this.chatSync)
-            .post('/test', this.test)
+            //.post('/test', this.test)
         
     }
     route = (router: express.Router): void => {
         router.use('/ai', this.router);
     };
 
-    test=(req: express.Request, res: express.Response)=>{
-        console.log("test start")
-
-        PythonShell.runString("x=1+1;print('x: ' + str(x))",{pythonPath:"D:\\ProgramFiles\\pyenv\\pyenv-win\\shims\\python.bat"}).then((res)=>{
-            console.log(`test result ${res}`)
-        }).catch(err=>{
-            console.log(`test err ${err}`)
-        })
-        console.log("test end")
-
-        
-        console.log("test start")
-
-        const testchat=new PythonShell(Path+"test.py",{pythonPath:"D:\\ProgramFiles\\pyenv\\pyenv-win\\shims\\python.bat",pythonOptions: ['-u']})
-
-        testchat.on("message",(msg)=>{
-            console.log(`message ${msg}`)
-        })
-        testchat.on("close",(msg:any)=>{
-            console.log(`close ${msg}`)
-        })
-        testchat.on("error",(msg:any)=>{
-            console.log(`error ${msg}`)
-        })
-        testchat.on("stderr",(msg)=>{
-            console.log(`stderr ${msg}`)
-        })
-        testchat.on("pythonError",(msg)=>{
-            console.log(`pythonError ${msg}`)
-        })
-        testchat.send("dwawdawd")
-
-
-        console.log("test end")
-
-        res.end()
-    }
 
     chatNew=(req: express.Request, res: express.Response) => {
         
@@ -77,25 +154,7 @@ export class AIController extends Controller {
         
         console.log(`create chat id: ${id}`)
         console.log(req.body)
-        const aichat=new PythonShell("ai_chat_cmd.py",{pythonPath:"D:\\ProgramFiles\\pyenv\\pyenv-win\\shims\\python.bat",scriptPath:Path})
-
-        aichat.on("message",(msg)=>{
-            console.log(`message ${msg}`)
-        })
-        aichat.on("close",(msg:any)=>{
-            console.log(`close ${msg}`)
-        })
-        aichat.on("error",(msg:any)=>{
-            console.log(`error ${msg}`)
-        })
-        aichat.on("stderr",(msg)=>{
-            console.log(`stderr ${msg}`)
-        })
-        aichat.on("pythonError",(msg)=>{
-            console.log(`pythonError ${msg}`)
-        })
-
-        aichat.send(JSON.stringify(id,req.body))
+        let aichat=new AIChat(req.body)
         
         this.chats[id]=aichat
         res.json({chatId:id})//.send(id)
@@ -108,16 +167,13 @@ export class AIController extends Controller {
         const {chatId}=req.body
         
         let chat=this.chats[chatId]
+        chat.sync(res)
+
+        
+
 
         //chat.sync(result_actions)
-        chat.once("message",(msg)=>{
-            console.log("sync result")
-            console.log(msg)
-            const res_=JSON.parse(msg)
-            res.json(res_)
-            res.end()
-        })
-        chat.send("sync")
+        
         console.log("try sync")
 
 

@@ -5,6 +5,8 @@ from typing import Any, Optional
 from time import sleep
 from threading import Thread
 
+# from ai_assistant import start
+
 def SyncAction_FileCreate(fileName:str,select:bool):
     return{
         "type":"FileCreate",
@@ -25,10 +27,33 @@ def SyncAction_ChatGenEnd():
 def SyncAction_Error(msg):
     return{
         "type":"Error",
-        "excerption":msg
+        "content":msg
     }
 
-class SyncStream:
+def SyncAction_Log(msg):
+    return{
+        "type":"Log",
+        "content":msg
+    }
+
+class SyncList[T]:
+    items:list[T]
+    syncedIndex:int
+    def __init__(self) -> None:
+        self.items=[]
+        self.syncedIndex=0
+
+    def write(self,value:T) -> None:
+        self.items.append(value)
+
+    def sync(self)->list[T]:
+        result=[]
+        while(self.syncedIndex<len(self.items)):
+            result.append(self.items[self.syncedIndex])
+            self.syncedIndex=self.syncedIndex+1
+        return result
+
+class SyncStreamStr:
     _unsynced:str
     _synced:str
     def __init__(self) -> None:
@@ -48,12 +73,12 @@ class SyncStream:
         return self._synced+self._unsynced
     
 class SyncFile:
-    content:SyncStream
+    content:SyncStreamStr
     fileName:str
     _createSynced:bool
     select:bool
     def __init__(self,fileName:str,select:bool) -> None:
-        self.content=SyncStream()
+        self.content=SyncStreamStr()
         self.fileName=fileName
         self._createSynced=False
         self.select=select
@@ -71,47 +96,43 @@ class AIChat:
     inputs:Any
     chat_output:Optional[SyncFile]
     scripts_output:list[SyncFile]
+    log:SyncList[str]
     ended:bool
     _ended_scynced:bool
+    excerption:Optional[str]
+    _excerption_synced:bool
     def __init__(self,inputs:Any) -> None:
         self.inputs=inputs
         self.chat_output=None
         self.scripts_output=[]
         self.ended=False
         self._ended_scynced=False
+        self.log=SyncList()
+        self.excerption=None
+        self._excerption_synced=False
         pass
 
     def sync(self,actions:list[dict[str,Any]]) -> None:
+
+        log_res=self.log.sync()
+        for i in log_res:
+            actions.append(SyncAction_Log(i))
+
         if self.chat_output!=None:
             self.chat_output.sync(actions)
+
         for script_file in self.scripts_output:
             script_file.sync(actions)
+
+        if self.excerption and not self._excerption_synced:
+            self._excerption_synced=True
+            self.ended=True
+            actions.append(SyncAction_Error(self.excerption))
+
         if self.ended and not self._ended_scynced:
             self._ended_scynced=True
             actions.append(SyncAction_ChatGenEnd())
-
-    def start(self) -> None:
-
-        def dummy():
-            sleep(0.1)
-            self.chat_output=SyncFile("chat.md",True)
-            sleep(0.2)
-            self.chat_output.content.write("I read 1 \n")
-            sleep(0.2)
-            self.chat_output.content.write("I read 2 \n")
-            self.chat_output.content.write("I spam code \n")
-            sleep(0.1)
-            self.scripts_output.append(SyncFile("a_script.md",False))
-            sleep(0.2)
-            self.scripts_output[0].content.write("I write some code\n")
-            sleep(0.2)
-            self.chat_output.content.write("I spaming code \n")
-            self.scripts_output[0].content.write("And I write some code\n")
-            sleep(0.2)
-            self.chat_output.content.write("done \n")
-            self.ended=True
-
-        t=Thread(target=dummy)
-        t.start()
+        
+    
 
 

@@ -25,6 +25,8 @@ const {
 
   AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY,
+
+  PYTHON_PATH
 } = process.env as {
   [key: string]: string,
 };
@@ -58,6 +60,7 @@ export const __DEV__ = NODE_ENV === 'development';
 
 export const httpPort = parseInt(HTTP_PORT);
 export const httpsPort = parseInt(HTTPS_PORT);
+export const pythonPath=PYTHON_PATH
 
 export const webhookOptions = isEnabled(WEBHOOK_ENABLED) ? {
   path: '/webhook',
