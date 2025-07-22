@@ -18,7 +18,7 @@ t=Thread(target=start,args=[a_chat])
 t.start()
 
 while True:
-    sleep(500)
+    sleep(0.5)
     # wait=input()
     # print("sync")
     sync_actions=[]
@@ -27,7 +27,7 @@ while True:
     print(json.dumps(sync_actions))
     ended=False
     for act in sync_actions:
-        if  type in act and act["type"]=="ChatGenEnd":
+        if "type" in act and act["type"]=="ChatGenEnd":
             ended=True
             break
     if ended:

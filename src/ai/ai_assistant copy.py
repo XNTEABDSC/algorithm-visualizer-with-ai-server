@@ -3,32 +3,15 @@ from ai_chat import AIChat, SyncFile
 from openai import OpenAI
 import os
 
-from dashscope import Assistants, Messages, Runs, Threads
-import json
-
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 
 import logging
 
 logger=logging.getLogger(__name__)
-tools_info=[]
-tools_map=[]
 
-client=OpenAI(
+client = OpenAI(
     api_key=os.getenv("DASHSCOPE_API_KEY"),
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-)
-
-assistant=Assistants.create(
-    model="qwen-plus",
-    name='algorithm-visualizer helper ai',
-    description="algorithm-visualizer的辅助ai助手",
-    instructions="""
-你是algorithm-visualizer的辅助ai助手，你负责帮助用户，通过生成在 https://algorithm-visualizer.org/ 运行的代码来帮助用户学习算法和数据结构。
-algorithm-visualizer的环境已为你配置，当你需要生成代码时，直接生成可以填入 https://algorithm-visualizer.org/ 并运行的javascript代码即可。
-你将会得到JSON文本输入，content为用户输入的内容。你只需要正常的输出markdown。
-""",
-    tools=tools_info
 )
 
 

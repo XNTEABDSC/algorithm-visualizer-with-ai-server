@@ -25,7 +25,7 @@ while True:
     print(json.dumps(sync_actions))
     ended=False
     for act in sync_actions:
-        if  type in act and act["type"]=="ChatGenEnd":
+        if "type" in act and act["type"]=="ChatGenEnd":
             ended=True
             break
     if ended:
