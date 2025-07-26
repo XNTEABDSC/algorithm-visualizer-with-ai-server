@@ -11,9 +11,15 @@ export class JsTracer extends Tracer {
     this.workerPath = path.resolve(__dirname, 'worker.js');
   }
 
-  async build(release: Release) {
-    const {tag_name} = release;
-    this.tagName = tag_name;
+  async build(release?: Release) {
+    if (release!=undefined&&release!=null){
+      
+      const {tag_name} = release;
+      this.tagName = tag_name;
+    }else{
+      const tag_name = "v2.3.9";
+      this.tagName = tag_name;
+    }
   }
 
   route(router: express.Router) {
@@ -25,3 +31,4 @@ export class JsTracer extends Tracer {
     router.get(`/${this.lang}/worker`, (req, res) => res.sendFile(this.workerPath));
   }
 }
+//2.3.9

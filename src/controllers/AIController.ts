@@ -46,6 +46,7 @@ export class AIController extends Controller {
         this.chats[id]=aichat
         res.json({chatId:id})//.send(id)
         res.end()
+        aichat.start()
 
         //setTimeout(()=>{res.write("I read 4");res.end()},1000)
     }

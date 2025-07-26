@@ -17,13 +17,17 @@ export class DockerTracer extends Tracer {
     this.imageName = `tracer-${this.lang}`;
   }
 
-  build(release: Release) {
-    const {tag_name} = release;
-    return execute(`docker build -t ${this.imageName} . --build-arg tag_name=${tag_name}`, {
-      cwd: this.directory,
-      stdout: process.stdout,
-      stderr: process.stderr,
-    });
+  build(release?: Release) {
+    if(release){
+      const {tag_name} = release;
+      return execute(`docker build -t ${this.imageName} . --build-arg tag_name=${tag_name}`, {
+        cwd: this.directory,
+        stdout: process.stdout,
+        stderr: process.stderr,
+      });
+    }
+    return Promise.resolve()
+    
   }
 
   route(router: express.Router) {
@@ -56,7 +60,7 @@ export class DockerTracer extends Tracer {
           const visualizationPath = path.resolve(tempPath, 'visualization.json');
           res.sendFile(visualizationPath, (err: any) => {
             if (err) return reject(new Error('Visualization Not Found'));
-            resolve();
+            resolve(void 0);
           });
         }))
         .catch(next)
