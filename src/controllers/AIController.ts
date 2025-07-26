@@ -6,7 +6,6 @@ import Server from 'Server';
 //import {pyrunner} from "node-pyrunner";
 
 import {PythonShell} from "python-shell";
-import { pythonPath } from 'config/environments';
 import { bool } from 'aws-sdk/clients/signer';
 import { AIChat } from 'ai';
 //let aps=new PythonShell("wda")

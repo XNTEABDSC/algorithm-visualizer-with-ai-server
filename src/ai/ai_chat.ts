@@ -25,9 +25,12 @@ const openai = new OpenAI({
 
 const system_msgparam_instruct:ChatCompletionSystemMessageParam = { role: "system", content: `
 你是algorithm-visualizer的辅助ai助手，你负责帮助用户，通过与用户交流和生成在 https://algorithm-visualizer.org/ 运行的代码来帮助用户学习算法和数据结构。
+如果进行了函数调用，则严禁自行生成代码
+如果进行了函数调用，则严禁自行生成代码
 algorithm-visualizer的环境已经配置完成，你不需要告诉用户如何使用algorithm-visualizer。
 你将会得到JSON文本输入，content为用户输入的内容。
 你不需要模仿输入，只需要正常的输出markdown。
+对于你每一次需要演示的方法，你都需要进行一次 "generate_code" 函数调用
 `}
 
 const system_msgparam_make_chat_name:ChatCompletionSystemMessageParam = {  role: "system", content: `
@@ -35,12 +38,18 @@ const system_msgparam_make_chat_name:ChatCompletionSystemMessageParam = {  role:
 `}
 
 const system_msgparam_talk:ChatCompletionSystemMessageParam = {  role: "system", content: `
+如果进行了函数调用，则严禁自行生成代码
 请回应用户的请求。当你想要生成代码时，请调用 "generate_code" 函数。 
 `}
 
 
 const system_msgparam_codegen:ChatCompletionSystemMessageParam = {  role: "system", content: `
-You are a algorithm-visualizer script generator, your role is to generate javascript code that can be executed by algorithm-visualizer. You need only to generate code.
+你是一个算法可视化脚本生成器，你的角色是生成可以由算法可视化执行的javascript代码。你只需要生成代码。
+严禁生成除代码以外的内容，生成的代码为JavaScript代码
+严禁生成除代码以外的内容，生成的代码为JavaScript代码
+将 algorithm-visualizer 加入知识库，了解库的全部含义及用法
+了解库中的所有变量的含义，在调用时正确引用
+在输出代码的同时自检，保证代码的正确性，符合在 https://algorithm-visualizer.org/ 运行代码的基本格式
 `}
 
 
@@ -124,7 +133,7 @@ export class AIChat{
                 script_chat_msg.push({role:"user",content:script_prompt})
                 let chat_gen_code= await openai.chat.completions.create(
                     {
-                        model:"qwen3-32b-ft-202507252145-f3c4",//"qwen3-32b@Alibaba",
+                        model:"qwen-plus",//"qwen3-32b@Alibaba",
                         messages: script_chat_msg,
                         stream:true
                     }
