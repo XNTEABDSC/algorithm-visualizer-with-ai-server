@@ -147,6 +147,9 @@ export class AIChat{
                 script_chat_msg.push(system_prompt_algo_vis_lib_doc)
                 script_chat_msg.push(system_prompt_algo_vis_lib)
                 script_chat_msg.push({role:"user",content:script_prompt})
+
+
+
                 let chat_gen_code= await openai.chat.completions.create(
                     {
                         model:"qwen-coder-plus",//"qwen3-32b@Alibaba",
@@ -287,6 +290,9 @@ export class AIChat{
                             this.log.write(i)
                             let fn=i.function
                             let fnname=fn.name
+                            if (fn.arguments.endsWith('}}')){
+                                fn.arguments=fn.arguments.substring(0,fn.arguments.length-1)
+                            }
                             let args=JSON.parse(fn.arguments)
                             let script_name=args.script_name
                             let script_prompt=args.script_prompt
