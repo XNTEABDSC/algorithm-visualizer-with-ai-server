@@ -36,6 +36,7 @@ const system_prompt_instruct:ChatCompletionSystemMessageParam = { role: "system"
 algorithm-visualizer的环境已经配置完成，你不需要告诉用户如何使用algorithm-visualizer。
 你将会得到JSON文本输入，content为用户输入的内容。
 你不需要模仿输入，只需要正常的输出markdown。
+必须详细的解释算法，不论代码多么简单
 `}
 
 const system_prompt_make_chat_name:ChatCompletionSystemMessageParam = {  role: "system", content: `
@@ -53,8 +54,6 @@ const system_prompt_codegen:ChatCompletionSystemMessageParam = {  role: "system"
 严禁生成除代码以外的内容，也不要有\`\`\`，生成的代码为JavaScript代码
 严禁幻想不存在的变量
 尽量将每一步细节展现，多解释原理
-
-
 `}
 
 const system_prompt_algo_vis_lib_doc:ChatCompletionSystemMessageParam = {  role: "system", content: system_prompt_script_lib_doc}
