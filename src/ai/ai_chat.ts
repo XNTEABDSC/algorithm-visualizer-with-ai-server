@@ -4,8 +4,11 @@ import { NotFound } from 'ts-httpexceptions';
 import Server from 'Server';
 import fs from "fs"
 
-let script_prompt=
+let system_prompt_script_lib_doc=
 fs.readFileSync("./src/ai/Writing_JavaScript_Code_with_Algorithm_Visualizer.md").toString()
+
+let system_prompt_script_lib=
+fs.readFileSync("./src/ai/algorithm-visualizer.umd.js").toString()
 
 //import {pyrunner} from "node-pyrunner";
 
@@ -33,7 +36,6 @@ const system_prompt_instruct:ChatCompletionSystemMessageParam = { role: "system"
 algorithm-visualizer的环境已经配置完成，你不需要告诉用户如何使用algorithm-visualizer。
 你将会得到JSON文本输入，content为用户输入的内容。
 你不需要模仿输入，只需要正常的输出markdown。
-对于你每一次需要演示的方法，你都需要进行一次 "generate_code" 函数调用
 `}
 
 const system_prompt_make_chat_name:ChatCompletionSystemMessageParam = {  role: "system", content: `
@@ -43,19 +45,18 @@ const system_prompt_make_chat_name:ChatCompletionSystemMessageParam = {  role: "
 const system_prompt_talk:ChatCompletionSystemMessageParam = {  role: "system", content: `
 如果进行了函数调用，则严禁自行生成代码
 请回应用户的请求。当你想要生成代码时，请调用 "generate_code" 函数。 
+对于你每一次需要演示的方法，你都需要进行一次 "generate_code" 函数调用
 `}
 
 const system_prompt_codegen:ChatCompletionSystemMessageParam = {  role: "system", content: `
 你是一个算法可视化脚本生成器，你的角色是生成可以由算法可视化执行的javascript代码。你只需要生成代码。
 严禁生成除代码以外的内容，也不要有\`\`\`，生成的代码为JavaScript代码
-将 algorithm-visualizer 加入知识库，了解库的全部含义及用法
-了解库中的所有变量的含义，在调用时正确引用
-在输出代码的同时自检，保证代码的正确性，符合在 https://algorithm-visualizer.org/ 运行代码的基本格式
-
 
 `}
 
-const system_prompt_algo_vis:ChatCompletionSystemMessageParam = {  role: "system", content: script_prompt}
+const system_prompt_algo_vis_lib_doc:ChatCompletionSystemMessageParam = {  role: "system", content: system_prompt_script_lib_doc}
+
+const system_prompt_algo_vis_lib:ChatCompletionSystemMessageParam = {  role: "system", content: system_prompt_script_lib}
 
 
 const main_chat_tools_prompt:Array<ChatCompletionTool>=[
@@ -133,13 +134,19 @@ export class AIChat{
             const script_chat = async (script_name:string,script_prompt:string) =>{
                 let script_file=new SyncFile(script_name + ".js",false)
                 this.files_output.push(script_file)
+
+                script_file.content.write("/*\n")
+                script_file.content.write(script_prompt)
+                script_file.content.write("*/\n")
+
                 let script_chat_msg:Array<ChatCompletionMessageParam>=[]
-                script_chat_msg.push(system_prompt_algo_vis)
                 script_chat_msg.push(system_prompt_codegen)
+                script_chat_msg.push(system_prompt_algo_vis_lib_doc)
+                script_chat_msg.push(system_prompt_algo_vis_lib)
                 script_chat_msg.push({role:"user",content:script_prompt})
                 let chat_gen_code= await openai.chat.completions.create(
                     {
-                        model:"qwen-plus",//"qwen3-32b@Alibaba",
+                        model:"qwen-coder-plus",//"qwen3-32b@Alibaba",
                         messages: script_chat_msg,
                         stream:true
                     }
