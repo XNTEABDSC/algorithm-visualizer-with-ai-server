@@ -43,7 +43,7 @@ const system_prompt_talk:ChatCompletionSystemMessageParam = {  role: "system", c
 `}
 
 const system_prompt_codegen:ChatCompletionSystemMessageParam = {  role: "system", content: `
-You are a algorithm-visualizer script generator, your role is to generate javascript code that can be executed by algorithm-visualizer. You need only to generate code.
+You are a algorithm-visualizer script generator, your role is to generate javascript code that can be executed by algorithm-visualizer. You need only to generate code. Do not include any other things, and do not add \`\`\`
 `}
 
 const system_prompt_algo_vis:ChatCompletionSystemMessageParam = {  role: "system", content: script_prompt}
