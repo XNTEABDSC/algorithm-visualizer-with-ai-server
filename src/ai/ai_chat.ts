@@ -2,6 +2,10 @@ import express from 'express';
 import { Controller } from 'controllers/Controller';
 import { NotFound } from 'ts-httpexceptions';
 import Server from 'Server';
+import fs from "fs"
+
+let script_prompt=
+fs.readFileSync("./src/ai/Writing_JavaScript_Code_with_Algorithm_Visualizer.md").toString()
 
 //import {pyrunner} from "node-pyrunner";
 
@@ -23,25 +27,26 @@ const openai = new OpenAI({
     //fetch:createOpenAIFetch()
 });
 
-const system_msgparam_instruct:ChatCompletionSystemMessageParam = { role: "system", content: `
+const system_prompt_instruct:ChatCompletionSystemMessageParam = { role: "system", content: `
 你是algorithm-visualizer的辅助ai助手，你负责帮助用户，通过与用户交流和生成在 https://algorithm-visualizer.org/ 运行的代码来帮助用户学习算法和数据结构。
 algorithm-visualizer的环境已经配置完成，你不需要告诉用户如何使用algorithm-visualizer。
 你将会得到JSON文本输入，content为用户输入的内容。
 你不需要模仿输入，只需要正常的输出markdown。
 `}
 
-const system_msgparam_make_chat_name:ChatCompletionSystemMessageParam = {  role: "system", content: `
+const system_prompt_make_chat_name:ChatCompletionSystemMessageParam = {  role: "system", content: `
 请为对话起一个名字，你只需要生成名字，不包含其他内容。
 `}
 
-const system_msgparam_talk:ChatCompletionSystemMessageParam = {  role: "system", content: `
+const system_prompt_talk:ChatCompletionSystemMessageParam = {  role: "system", content: `
 请回应用户的请求。当你想要生成代码时，请调用 "generate_code" 函数。 
 `}
 
-
-const system_msgparam_codegen:ChatCompletionSystemMessageParam = {  role: "system", content: `
+const system_prompt_codegen:ChatCompletionSystemMessageParam = {  role: "system", content: `
 You are a algorithm-visualizer script generator, your role is to generate javascript code that can be executed by algorithm-visualizer. You need only to generate code.
 `}
+
+const system_prompt_algo_vis:ChatCompletionSystemMessageParam = {  role: "system", content: script_prompt}
 
 
 const main_chat_tools_prompt:Array<ChatCompletionTool>=[
@@ -120,11 +125,12 @@ export class AIChat{
                 let script_file=new SyncFile(script_name + ".js",false)
                 this.files_output.push(script_file)
                 let script_chat_msg:Array<ChatCompletionMessageParam>=[]
-                script_chat_msg.push(system_msgparam_codegen)
+                script_chat_msg.push(system_prompt_algo_vis)
+                script_chat_msg.push(system_prompt_codegen)
                 script_chat_msg.push({role:"user",content:script_prompt})
                 let chat_gen_code= await openai.chat.completions.create(
                     {
-                        model:"qwen3-32b-ft-202507252145-f3c4",//"qwen3-32b@Alibaba",
+                        model:"qwen-plus",//"qwen3-32b@Alibaba",
                         messages: script_chat_msg,
                         stream:true
                     }
@@ -143,10 +149,10 @@ export class AIChat{
             const main_chat =async () =>{
                 console.log("main_chat start")
                 let chat_messages=this.messages
-                chat_messages.push(system_msgparam_instruct)
+                chat_messages.push(system_prompt_instruct)
                 chat_messages.push({role:"user",content:this.inputs})
 
-                chat_messages.push(system_msgparam_make_chat_name)
+                chat_messages.push(system_prompt_make_chat_name)
                 
                 let chat_make_name_result= await openai.chat.completions.create(
                     {
@@ -171,7 +177,7 @@ export class AIChat{
                 let chat_file=new SyncFile(made_name + '.md',true)
                 this.chat_output=chat_file
 
-                chat_messages.push(system_msgparam_talk)
+                chat_messages.push(system_prompt_talk)
                 
                 while(true){
                     console.log("ai chat gen start")
