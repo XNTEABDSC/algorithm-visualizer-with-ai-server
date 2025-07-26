@@ -9,7 +9,6 @@ fs.readFileSync("./src/ai/Writing_JavaScript_Code_with_Algorithm_Visualizer.md")
 
 //import {pyrunner} from "node-pyrunner";
 
-import {PythonShell} from "python-shell";
 import { bool } from 'aws-sdk/clients/signer';
 import { SyncStreamStr,SyncFile,SyncAction_ChatGenEnd,SyncAction_FileAppend,SyncAction_FileCreate,SyncArray,SyncAction_Log,SyncAction_Error } from "ai/utils"
 import {OpenAI} from "openai"
