@@ -5,10 +5,11 @@ import Server from 'Server';
 import fs from "fs"
 
 let system_prompt_script_lib_doc=
-fs.readFileSync("./src/ai/Writing_JavaScript_Code_with_Algorithm_Visualizer.md").toString()
+fs.readFileSync("./src/ai/prompt_files/Algorithm-Visualizer-Guide.md").toString()
 
 let system_prompt_script_lib=
-fs.readFileSync("./src/ai/algorithm-visualizer.umd.js").toString()
+fs.readFileSync("./src/ai/prompt_files/algorithm-visualizer.umd.js").toString()
+
 
 //import {pyrunner} from "node-pyrunner";
 
@@ -31,12 +32,9 @@ const openai = new OpenAI({
 
 const system_prompt_instruct:ChatCompletionSystemMessageParam = { role: "system", content: `
 你是algorithm-visualizer的辅助ai助手，你负责帮助用户，通过与用户交流和生成在 https://algorithm-visualizer.org/ 运行的代码来帮助用户学习算法和数据结构。
-如果进行了函数调用，则严禁自行生成代码
-如果进行了函数调用，则严禁自行生成代码
 algorithm-visualizer的环境已经配置完成，你不需要告诉用户如何使用algorithm-visualizer。
 你将会得到JSON文本输入，content为用户输入的内容。
 你不需要模仿输入，只需要正常的输出markdown。
-必须详细的解释算法，不论代码多么简单
 `}
 
 const system_prompt_make_chat_name:ChatCompletionSystemMessageParam = {  role: "system", content: `
@@ -44,22 +42,37 @@ const system_prompt_make_chat_name:ChatCompletionSystemMessageParam = {  role: "
 `}
 
 const system_prompt_talk:ChatCompletionSystemMessageParam = {  role: "system", content: `
-如果进行了函数调用，则严禁自行生成代码
 请回应用户的请求。当你想要生成代码时，请调用 "generate_code" 函数。 
-对于你每一次需要演示的方法，你都需要进行一次 "generate_code" 函数调用
+对于你每一次需要演示的方法，你都需要进行一次 "generate_code" 函数调用。
+无论算法多么简单，你都应该先解释算法，再调用 "generate_code" 函数。
+调用 "generate_code" 函数后，你不需要再自己生成代码。
 `}
 
-const system_prompt_codegen:ChatCompletionSystemMessageParam = {  role: "system", content: `
-你是一个算法可视化脚本生成器，你的角色是生成可以由算法可视化执行的javascript代码。你只需要生成代码。
-严禁生成除代码以外的内容，也不要有\`\`\`，生成的代码为JavaScript代码
-严禁幻想不存在的变量
-尽量将每一步细节展现，多解释原理
+const system_prompt_gen_code:ChatCompletionSystemMessageParam = {  role: "system", content: `
+你是一个算法可视化脚本生成器，你的角色是生成可以由算法可视化执行的javascript代码。请思考并生成生成代码。
 `}
 
-const system_prompt_algo_vis_lib_doc:ChatCompletionSystemMessageParam = {  role: "system", content: system_prompt_script_lib_doc}
+const system_prompt_gen_code_algo_vis_lib_doc:ChatCompletionSystemMessageParam = {  role: "system", content: system_prompt_script_lib_doc}
 
-const system_prompt_algo_vis_lib:ChatCompletionSystemMessageParam = {  role: "system", content: system_prompt_script_lib}
+const system_prompt_gen_code_algo_vis_lib:ChatCompletionSystemMessageParam = {  role: "system", content: system_prompt_script_lib}
 
+const system_prompt_gen_code_algo_vis:ChatCompletionSystemMessageParam = {  role: "system", content: `
+严禁幻想不存在的值。
+你应该require所有需要的内容。
+const { Tracer, Array2DTracer, Array1DTracer, ChartTracer, GraphTracer, LogTracer, ScatterTracer, Layout, VerticalLayout, HorizontalLayout, Randomize } = require('algorithm-visualizer');
+你应该将所有重要的变量用Tracer显示。
+你应该尽量的使用命令式编程而非函数式编程，尽量用循环而非递归。
+tracer.swap不存在。
+注意妥善的管理dpatch和select。
+`}
+
+const system_prompt_gen_code_output:ChatCompletionSystemMessageParam = {  role: "system", content: `
+不要模仿你上一次的输入结构，现在你应该只生成JavaScript代码而非markdown。你不需要解释你的代码（你应该用注释解释你的代码）。严禁生成除代码以外的内容。不要在前后添加\`\`\`。
+`}
+
+const system_prompt_gen_code_again:ChatCompletionSystemMessageParam = {  role: "system", content: `
+请检查你生成的代码，解决其中的问题，并再次生成代码。
+`}
 
 const main_chat_tools_prompt:Array<ChatCompletionTool>=[
     {
@@ -139,31 +152,57 @@ export class AIChat{
 
                 script_file.content.write("/*\n")
                 script_file.content.write(script_prompt)
-                script_file.content.write("*/\n")
+                script_file.content.write("\n*/\n")
 
                 let script_chat_msg:Array<ChatCompletionMessageParam>=[]
-                script_chat_msg.push(system_prompt_codegen)
-                script_chat_msg.push(system_prompt_algo_vis_lib_doc)
-                script_chat_msg.push(system_prompt_algo_vis_lib)
+                script_chat_msg.push(system_prompt_gen_code)
+                script_chat_msg.push(system_prompt_gen_code_algo_vis_lib_doc)
+                script_chat_msg.push(system_prompt_gen_code_algo_vis_lib)
+                //script_chat_msg.push(system_prompt_gen_code_algo_vis)
+                //script_chat_msg.push(system_prompt_algo_vis)
+                //script_chat_msg.push(system_prompt_algo_vis_example)
                 script_chat_msg.push({role:"user",content:script_prompt})
 
 
-
+                script_file.content.write("/*\n")
+                let fst_codegen=""
                 let chat_gen_code= await openai.chat.completions.create(
                     {
-                        model:"qwen-coder-plus",//"qwen3-32b@Alibaba",
+                        model:"qwen3-coder-plus",//"qwen3-32b@Alibaba",
                         messages: script_chat_msg,
-                        stream:true
+                        stream:true,
                     }
                 )
                 for await (const chunk of chat_gen_code){
                     const delta=chunk.choices[0].delta
                     const content=delta.content
                     if(content){
+                        fst_codegen+=content
                         script_file.content.write(content)
                     }
                 }
+                script_file.content.write("\n*/\n")
 
+                script_chat_msg.push({role:"assistant",content:fst_codegen})
+                script_chat_msg.push(system_prompt_gen_code_again)
+                script_chat_msg.push(system_prompt_gen_code_algo_vis)
+                script_chat_msg.push(system_prompt_gen_code_output)
+
+                let chat_gen_code2= await openai.chat.completions.create(
+                    {
+                        model:"qwen3-coder-plus",//"qwen3-32b@Alibaba",
+                        messages: script_chat_msg,
+                        stream:true,
+                    }
+                )
+                for await (const chunk of chat_gen_code2){
+                    const delta=chunk.choices[0].delta
+                    const content=delta.content
+                    if(content){
+                        fst_codegen=fst_codegen+content
+                        script_file.content.write(content)
+                    }
+                }
 
             }
 
@@ -179,6 +218,7 @@ export class AIChat{
                     {
                         model:"qwen-plus",
                         messages: chat_messages,
+                        
                         //stream:true
                     }
                 )
