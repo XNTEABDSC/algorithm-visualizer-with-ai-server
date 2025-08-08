@@ -13,7 +13,7 @@ The `tracers.js` library includes several tracer classes for different visualiza
 - **LogTracer**: Displays textual logs of algorithm steps in a console-like interface.
 - **ChartTracer**: Visualizes data as charts (e.g., bar charts for sorting algorithms).
 - **GraphTracer**: Visualizes graph structures, such as nodes and edges.
-- **Tracer**: A base class providing utility methods like `delay()` for controlling animation timing.
+- **Tracer**: A class providing utility methods like `delay()` for controlling animation timing.
 
 ### Layout and Visualization Control
 - **Layout**: Manages the arrangement of multiple tracers (e.g., stacking an array and log tracer vertically).
